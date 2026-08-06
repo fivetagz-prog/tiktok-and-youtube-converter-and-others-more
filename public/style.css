@@ -5,8 +5,8 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #0d0d0d;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #0f0f0f;
     color: #ffffff;
     display: flex;
     justify-content: center;
@@ -15,82 +15,79 @@ body {
 }
 
 .container {
-    background-color: #161616;
-    padding: 2.5rem;
+    background-color: #212121;
+    padding: 2rem;
     border-radius: 12px;
     width: 100%;
-    max-width: 520px;
-    border: 1px solid #282828;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    max-width: 480px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 h1 {
-    font-size: 1.75rem;
-    text-align: center;
+    font-size: 1.5rem;
     margin-bottom: 0.5rem;
-    background: linear-gradient(45deg, #ff0050, #00f2fe);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    text-align: center;
+    color: #ff0000;
 }
 
 .subtitle {
     text-align: center;
     font-size: 0.85rem;
-    color: #888;
+    color: #aaa;
     margin-bottom: 1.5rem;
 }
 
 .form-group {
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.25rem;
 }
 
 label {
     display: block;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
-    color: #bbb;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #aaa;
 }
 
-input, select {
+input {
     width: 100%;
-    padding: 0.8rem;
-    background-color: #050505;
+    padding: 0.75rem;
+    background-color: #121212;
     border: 1px solid #333;
     border-radius: 6px;
     color: #fff;
-    font-size: 0.95rem;
+    font-size: 1rem;
     outline: none;
 }
 
-input:focus, select:focus {
-    border-color: #00f2fe;
+input:focus {
+    border-color: #ff0000;
 }
 
 button {
     width: 100%;
-    padding: 0.9rem;
-    background: linear-gradient(90deg, #ff0050, #00f2fe);
+    padding: 0.85rem;
+    background-color: #ff0000;
     border: none;
     border-radius: 6px;
     color: #fff;
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: background 0.2s;
 }
 
 button:hover {
-    opacity: 0.9;
+    background-color: #cc0000;
 }
 
 button:disabled {
-    opacity: 0.5;
+    background-color: #555;
     cursor: not-allowed;
 }
 
 #status {
-    margin-top: 1.2rem;
+    margin-top: 1rem;
     text-align: center;
-    font-size: 0.85rem;
-    min-height: 1.2em;
+    font-size: 0.9rem;
+    color: #aaa;
 }
