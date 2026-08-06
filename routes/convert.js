@@ -6,71 +6,62 @@ const fs = require('fs');
 const router = express.Router();
 const COOKIES_PATH = path.join(__dirname, '../cookies.txt');
 
-// Allowed platforms regex
-const SUPPORTED_PLATFORMS = /youtube\.com|youtu\.be|tiktok\.com|instagram\.com|twitter\.com|x\.com|twitch\.tv|soundcloud\.com/;
+router.get('/', async (req, res) => {
+    const videoUrl = req.query.url;
 
-router.get('/', (req, res) => {
-    const mediaUrl = req.query.url;
-    const format = (req.query.format || 'mp3').toLowerCase();
-
-    if (!mediaUrl) {
-        return res.status(400).json({ error: 'URL query parameter is required.' });
+    if (!videoUrl) {
+        return res.status(400).json({ error: 'URL is required.' });
     }
 
-    if (!SUPPORTED_PLATFORMS.test(mediaUrl)) {
-        return res.status(400).json({ 
-            error: 'Unsupported URL. Platform must be YouTube, TikTok, Instagram, Twitter/X, Twitch, or SoundCloud.' 
-        });
+    const isYouTube = /youtube\.com|youtu\.be/.test(videoUrl);
+    const isTikTok = /tiktok\.com/.test(videoUrl);
+
+    if (!isYouTube && !isTikTok) {
+        return res.status(400).json({ error: 'Only YouTube and TikTok links are supported.' });
     }
 
-    // Set MIME types and extensions
-    const mimeTypes = {
-        mp3: 'audio/mpeg',
-        wav: 'audio/wav',
-        m4a: 'audio/mp4',
-        mp4: 'video/mp4'
-    };
+    // TikTok Handler — MP4 Video Only (TikWM API)
+    if (isTikTok) {
+        try {
+            const apiRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`);
+            const data = await apiRes.json();
 
-    const mimeType = mimeTypes[format] || 'application/octet-stream';
-    const filename = `media-${Date.now()}.${format}`;
+            if (data.code !== 0 || !data.data || !data.data.play) {
+                return res.status(400).json({ error: data.msg || 'Failed to process TikTok video.' });
+            }
+
+            return res.redirect(data.data.play);
+        } catch (err) {
+            console.error('TikWM Error:', err);
+            return res.status(500).json({ error: 'Failed to fetch TikTok MP4 video.' });
+        }
+    }
+
+    // YouTube Handler — MP4 Video Only (yt-dlp)
+    const filename = `youtube-${Date.now()}.mp4`;
 
     res.header('Content-Disposition', `attachment; filename="${filename}"`);
-    res.header('Content-Type', mimeType);
+    res.header('Content-Type', 'video/mp4');
 
     const args = [];
 
-    // Attach cookies file if available
     if (fs.existsSync(COOKIES_PATH)) {
         args.push('--cookies', COOKIES_PATH);
     }
 
-    // Configure extraction flags based on chosen format
-    if (format === 'mp3') {
-        args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
-    } else if (format === 'wav') {
-        args.push('-x', '--audio-format', 'wav');
-    } else if (format === 'm4a') {
-        args.push('-x', '--audio-format', 'm4a');
-    } else if (format === 'mp4') {
-        args.push('-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best');
-    } else {
-        return res.status(400).json({ error: 'Invalid format requested.' });
-    }
-
-    args.push('-o', '-', mediaUrl);
+    args.push('-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', '-o', '-', videoUrl);
 
     const ytdlp = spawn('yt-dlp', args);
 
-    // Stream process directly to response
     ytdlp.stdout.pipe(res);
 
     ytdlp.stderr.on('data', (data) => {
-        console.error(`yt-dlp error output: ${data.toString()}`);
+        console.error(`yt-dlp error: ${data.toString()}`);
     });
 
     ytdlp.on('close', (code) => {
         if (code !== 0) {
-            console.error(`yt-dlp process failed with exit code ${code}`);
+            console.error(`yt-dlp process exited with code ${code}`);
         }
     });
 
