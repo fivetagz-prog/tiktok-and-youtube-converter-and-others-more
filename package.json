@@ -1,6 +1,7 @@
 {
-  "name": "tiktok-and-youtube-mp4-converter",
+  "name": "tiktok-and-youtube-converter",
   "version": "1.0.0",
+  "description": "YouTube and TikTok MP4 Downloader",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
