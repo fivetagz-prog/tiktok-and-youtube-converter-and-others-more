@@ -9,10 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const urlInput = document.getElementById('url').value.trim();
 
         if (!urlInput) {
-            statusDiv.textContent = 'Please enter a URL.';
+            statusDiv.textContent = 'Please enter a valid URL.';
             return;
         }
 
+        statusDiv.style.color = '#aaa';
         statusDiv.textContent = 'Processing MP4 request... Download will start automatically.';
         submitBtn.disabled = true;
 
@@ -23,6 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             submitBtn.disabled = false;
             statusDiv.textContent = '';
-        }, 5000);
+        }, 6000);
     });
 });
