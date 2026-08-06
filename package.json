@@ -1,12 +1,12 @@
 {
   "name": "tiktok-and-youtube-converter",
   "version": "1.0.0",
-  "description": "YouTube and TikTok MP4 Downloader",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.15.9",
     "express": "^4.19.2"
   }
 }
