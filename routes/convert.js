@@ -1,18 +1,13 @@
 const express = require('express');
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+const ytdl = require('@distube/ytdl-core');
 
 const router = express.Router();
-const COOKIES_PATH = path.join(__dirname, '../cookies.txt');
-const TEMP_DIR = os.tmpdir();
 
 router.get('/', async (req, res) => {
     const videoUrl = req.query.url;
 
     if (!videoUrl) {
-        return res.status(400).json({ error: 'URL query parameter is required.' });
+        return res.status(400).json({ error: 'URL parameter is required.' });
     }
 
     const isYouTube = /youtube\.com|youtu\.be/.test(videoUrl);
@@ -22,7 +17,7 @@ router.get('/', async (req, res) => {
         return res.status(400).json({ error: 'Only YouTube and TikTok links are supported.' });
     }
 
-    // TikTok Handler — API-based (No system binary required)
+    // 1. TikTok Handler (Pure API)
     if (isTikTok) {
         try {
             const apiRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`);
@@ -34,88 +29,57 @@ router.get('/', async (req, res) => {
 
             return res.redirect(data.data.play);
         } catch (err) {
-            console.error('TikWM Error:', err);
-            return res.status(500).json({ error: 'Failed to fetch TikTok MP4 video stream.' });
+            console.error('TikTok API Error:', err);
+            return res.status(500).json({ error: 'Failed to fetch TikTok MP4 video.' });
         }
     }
 
-    // YouTube Handler — Merges Audio + Video using yt-dlp & FFmpeg
-    const outputFilename = `yt_${Date.now()}.mp4`;
-    const outputPath = path.join(TEMP_DIR, outputFilename);
-
-    const args = [];
-
-    if (fs.existsSync(COOKIES_PATH)) {
-        args.push('--cookies', COOKIES_PATH);
-    }
-
-    args.push(
-        '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        '--merge-output-format', 'mp4',
-        '-o', outputPath,
-        videoUrl
-    );
-
-    let ytdlp;
-    try {
-        ytdlp = spawn('yt-dlp', args);
-    } catch (err) {
-        console.error('yt-dlp spawn error:', err);
-        return res.status(500).json({
-            error: 'yt-dlp binary is not installed on this server environment. Deploy via Render/Docker to support YouTube processing.'
-        });
-    }
-
-    ytdlp.on('error', (err) => {
-        console.error('yt-dlp execution error:', err);
-        if (!res.headersSent) {
-            return res.status(500).json({
-                error: 'yt-dlp binary is missing on Vercel Serverless Functions. Deploy using Render or Docker.'
+    // 2. YouTube Handler (Pure JS — No binaries or FFmpeg required)
+    if (isYouTube) {
+        try {
+            // Extract formats directly using pure JS
+            const info = await ytdl.getInfo(videoUrl);
+            
+            // Select progressive format (pre-combined audio + video MP4)
+            const format = ytdl.chooseFormat(info.formats, {
+                filter: 'audioandvideo',
+                quality: 'highestvideo'
             });
-        }
-    });
 
-    ytdlp.stderr.on('data', (data) => {
-        console.error(`yt-dlp log: ${data.toString()}`);
-    });
-
-    ytdlp.on('close', (code) => {
-        if (code !== 0) {
-            console.error(`yt-dlp process exited with code ${code}`);
-            if (fs.existsSync(outputPath)) {
-                fs.unlinkSync(outputPath);
+            if (format && format.url) {
+                return res.redirect(format.url);
             }
-            if (!res.headersSent) {
-                return res.status(500).json({ error: 'Failed to process YouTube video. Ensure yt-dlp and ffmpeg are installed on the server.' });
-            }
-            return;
+        } catch (err) {
+            console.warn('ytdl-core failed, attempting API fallback:', err.message);
         }
 
-        if (!fs.existsSync(outputPath)) {
-            if (!res.headersSent) {
-                return res.status(500).json({ error: 'Output MP4 file was not generated.' });
-            }
-            return;
-        }
+        // Fallback API if ytdl-core encounters bot detection on Vercel IPs
+        try {
+            const fallbackRes = await fetch('https://api.cobalt.tools/api/json', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0'
+                },
+                body: JSON.stringify({
+                    url: videoUrl,
+                    vCodec: 'h264'
+                })
+            });
 
-        res.download(outputPath, 'video.mp4', (err) => {
-            if (err) {
-                console.error('Download transfer error:', err);
-            }
-            if (fs.existsSync(outputPath)) {
-                fs.unlinkSync(outputPath);
-            }
-        });
-    });
+            const fallbackData = await fallbackRes.json();
 
-    req.on('close', () => {
-        if (ytdlp && !ytdlp.killed) {
-            ytdlp.kill();
+            if (fallbackData && fallbackData.url) {
+                return res.redirect(fallbackData.url);
+            }
+
+            return res.status(400).json({ error: fallbackData.text || 'Unable to extract video stream.' });
+        } catch (fallbackErr) {
+            console.error('Fallback API Error:', fallbackErr);
+            return res.status(500).json({ error: 'Failed to process YouTube video on serverless environment.' });
         }
-        if (fs.existsSync(outputPath)) {
-            fs.unlinkSync(outputPath);
-        }
-    });
+    }
 });
 
 module.exports = router;

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         statusDiv.style.color = '#aaa';
-        statusDiv.textContent = 'Processing MP4 request... Download will start automatically.';
+        statusDiv.textContent = 'Extracting MP4 video stream...';
         submitBtn.disabled = true;
 
         const downloadUrl = `/api/convert?url=${encodeURIComponent(urlInput)}`;
@@ -24,6 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             submitBtn.disabled = false;
             statusDiv.textContent = '';
-        }, 6000);
+        }, 4000);
     });
 });
