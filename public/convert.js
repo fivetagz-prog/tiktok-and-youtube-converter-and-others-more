@@ -7,26 +7,22 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const urlInput = document.getElementById('url').value.trim();
-        const formatSelect = document.getElementById('format').value;
 
         if (!urlInput) {
             statusDiv.textContent = 'Please enter a URL.';
             return;
         }
 
-        statusDiv.style.color = '#00f2fe';
-        statusDiv.textContent = 'Processing request... Download will start automatically.';
+        statusDiv.textContent = 'Processing MP4 request... Download will start automatically.';
         submitBtn.disabled = true;
 
-        const downloadUrl = `/api/convert?url=${encodeURIComponent(urlInput)}&format=${formatSelect}`;
+        const downloadUrl = `/api/convert?url=${encodeURIComponent(urlInput)}`;
         
-        // Trigger file download
         window.location.href = downloadUrl;
 
         setTimeout(() => {
             submitBtn.disabled = false;
-            statusDiv.textContent = 'Ready for next download.';
-            statusDiv.style.color = '#aaa';
+            statusDiv.textContent = '';
         }, 5000);
     });
 });
